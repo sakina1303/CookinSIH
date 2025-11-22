@@ -42,47 +42,25 @@ Automation scripts for initializing DBs, exporting Grade Packs, and syncing.
 
 ### 7. `backups/`
 
-Local database backups.  
-This folder is **ignored** in Git.
-
----
-
-## 🔁 Data Flow Summary
-
-1. **Student uses app offline**
-
-   - OCR → Vector Search → SLM → Answer
-   - All activity stored in local Student DB
-
-2. **Student goes online**
-
-   - Student DB pushes updates to Supabase (`sync_outbox`)
-
-3. **Teacher logs in + syncs**
-
-   - Teacher Dashboard pulls class data from Supabase
-   - Data saved into Teacher DB (`sync_inbox`)
-
-4. **Teacher gives feedback**
-   - Sent via email (not stored in any DB)
-
----
-
 # Database (trimmed)
 
-This `db/` folder now contains only what's needed to import PDF files from
-Supabase and store their extracted text in a local SQLite `books` table.
+This `db/` folder contains the minimal files needed for the PDF → SQLite workflow.
+
+Purpose
+
+- Download PDFs from a Supabase storage bucket, extract text, and save the results
+  into a local SQLite `books` table used by the app or other offline tools.
 
 Kept files
 
-- `content/sqlite_books_schema.sql` — SQLite `books` schema used by the sync script
-- `tools/sync_pdfs_to_sqlite.py` — script to download PDFs, extract text, and insert rows into SQLite
+- `content/sqlite_books_schema.sql` — SQLite `books` table schema
+- `tools/sync_pdfs_to_sqlite.py` — sync script that downloads PDFs, extracts text, and inserts rows into SQLite
 
 Removed items
 
-- Vector search, migrations, student/teacher supabase schemas and other app-specific artifacts were removed to keep the repository minimal and focused.
+- Vector search, migrations, and student/teacher schemas were removed to keep the repository focused on the PDF import workflow. If you need them restored, tell me which folders to bring back.
 
-How to use
+Quick usage
 
 1. Install Python deps:
 
@@ -90,18 +68,50 @@ How to use
 pip install -r requirements.txt
 ```
 
-2. Set environment variables and run the sync:
+2. Use `.env.example` as a template. Copy to `.env` and fill in your real values locally:
 
 ```bash
-export SUPABASE_URL=https://xyz.supabase.co
-export SUPABASE_KEY='your_supabase_key_here'
-export SUPABASE_BUCKET=books
+cp .env.example .env
+# edit .env to add your SUPABASE_URL and SUPABASE_KEY
+```
+
+3. Run the sync script:
+
+```bash
 python db/tools/sync_pdfs_to_sqlite.py
 ```
 
 Schema
 
-- The local SQLite table schema is in `db/content/sqlite_books_schema.sql`.
+- The local SQLite `books` schema is in `db/content/sqlite_books_schema.sql` and the script writes to `db/content/books.sqlite` by default.
 
-If you want other pieces restored (migrations, student/teacher schemas, or the vector
-stack), say which folders you want and I can bring them back.
+Environment (.env)
+
+- A safe `.env.example` file is included. Do NOT commit your `.env` with real secrets — it is listed in `.gitignore`.
+
+Full-text search (FTS5)
+You can enable SQLite full-text search to search the extracted text. Run the following SQL in `sqlite3 db/content/books.sqlite` to create an FTS index and maintain it with triggers:
+
+```sql
+CREATE VIRTUAL TABLE IF NOT EXISTS books_fts
+USING fts5(title, extracted_text, content='books', content_rowid='id');
+
+INSERT INTO books_fts(rowid, title, extracted_text)
+SELECT id, title, extracted_text FROM books;
+
+CREATE TRIGGER IF NOT EXISTS books_ai AFTER INSERT ON books BEGIN
+   INSERT INTO books_fts(rowid, title, extracted_text)
+   VALUES (new.id, new.title, new.extracted_text);
+END;
+
+CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON books BEGIN
+   DELETE FROM books_fts WHERE rowid = old.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON books BEGIN
+   UPDATE books_fts SET title = new.title, extracted_text = new.extracted_text
+   WHERE rowid = new.id;
+END;
+```
+
+If you want me to add the FTS creation step to the sync script (so it's created automatically), say so and I'll add it.
