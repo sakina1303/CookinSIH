@@ -1,22 +1,41 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';
-import { Trophy, TrendingUp, Home as HomeIcon } from 'lucide-react-native';
+import { Trophy, TrendingUp, Home as HomeIcon, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../theme';
 import { applyAlpha } from '../shared/colorUtils';
 import { CardButton } from '../shared/CardButton';
+import { evaluateQuizSession } from '../../utils/quiz';
 
-export function QuizResults({ session, onRetake, onHome }) {
+export function QuizResults({ session, aiSummary, isGeneratingSummary, summaryError, onRetake, onHome }) {
   const { colors, radii, spacing, typography } = useTheme();
-  const correctCount = Math.floor(session.totalQuestions * 0.7);
-  const scorePercentage = Math.round((correctCount / session.totalQuestions) * 100);
+  const performance = React.useMemo(
+    () => evaluateQuizSession(session, session?.questions),
+    [session],
+  );
+  const correctCount = performance.correctCount;
+  const totalQuestions = performance.total || session.totalQuestions;
+  const incorrectCount = performance.incorrectCount + performance.skippedCount;
+  const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
-  const suggestions = [
-    'Review questions you got wrong',
-    'Ask your AI tutor for explanations',
-    'Practice similar topics',
-  ];
+  const suggestions = React.useMemo(() => {
+    const tips = [];
+
+    if (performance.incorrectCount > 0) {
+      tips.push('Review the questions you missed and note the correct answers');
+    }
+
+    if (performance.skippedCount > 0) {
+      tips.push('Try to answer every question—even an educated guess helps');
+    }
+
+    tips.push('Ask your AI tutor for a kid-friendly explanation');
+    tips.push('Practice similar topics to build confidence');
+
+    return tips.slice(0, 3);
+  }, [performance.incorrectCount, performance.skippedCount]);
+  const summaryParagraphs = aiSummary ? aiSummary.split('\n') : [];
 
   return (
     <View>
@@ -52,7 +71,7 @@ export function QuizResults({ session, onRetake, onHome }) {
             fontSize: 14,
           }}
         >
-          You got {correctCount} out of {session.totalQuestions} correct
+          You got {correctCount} out of {totalQuestions} correct
         </Text>
         <Text
           style={{
@@ -79,9 +98,10 @@ export function QuizResults({ session, onRetake, onHome }) {
       >
         <Svg height={200} width="100%" viewBox="0 0 320 200">
           <Rect x={40} y={40} width={240} height={1} fill={colors.border} />
-          {[correctCount, session.totalQuestions - correctCount].map((value, index) => {
+          {[correctCount, incorrectCount].map((value, index) => {
             const x = 80 + index * 120;
-            const barHeight = (value / session.totalQuestions) * 120;
+            const safeTotal = totalQuestions > 0 ? totalQuestions : 1;
+            const barHeight = (value / safeTotal) * 120;
             const y = 160 - barHeight;
             const fill = index === 0 ? colors.primary : colors.muted;
             const label = index === 0 ? 'Correct' : 'Incorrect';
@@ -106,13 +126,129 @@ export function QuizResults({ session, onRetake, onHome }) {
                   fontSize={13}
                   textAnchor="middle"
                 >
-                  {label}
+                  {index === 0 ? 'Correct' : 'Others'}
                 </SvgText>
               </React.Fragment>
             );
           })}
         </Svg>
       </View>
+
+      <View
+        style={{
+          borderRadius: radii.xl,
+          borderWidth: 2,
+          borderColor: applyAlpha(colors.primary, 0.2),
+          backgroundColor: applyAlpha(colors.primary, 0.08),
+          padding: spacing.lg,
+          marginBottom: spacing.xl,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Sparkles size={20} color={colors.primary} style={{ marginRight: spacing.sm }} />
+          <Text
+            style={{
+              fontFamily: typography.family,
+              fontWeight: typography.weightMedium,
+              color: colors.foreground,
+              fontSize: 16,
+            }}
+          >
+            AI Tutor Insight
+          </Text>
+        </View>
+
+        {isGeneratingSummary ? (
+          <Text
+            style={{
+              fontFamily: typography.family,
+              color: colors.mutedForeground,
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Generating a personalized explanation...
+          </Text>
+        ) : summaryError ? (
+          <Text
+            style={{
+              fontFamily: typography.family,
+              color: colors.destructive,
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            {summaryError}
+          </Text>
+        ) : aiSummary ? (
+          summaryParagraphs
+            .filter((paragraph) => paragraph.trim().length > 0)
+            .map((paragraph, index, filtered) => (
+            <Text
+              key={`ai-summary-${index}`}
+              style={{
+                fontFamily: typography.family,
+                color: colors.foreground,
+                fontSize: 14,
+                lineHeight: 20,
+                marginBottom: index === filtered.length - 1 ? 0 : spacing.xs,
+              }}
+            >
+              {paragraph.trim()}
+            </Text>
+          ))
+        ) : (
+          <Text
+            style={{
+              fontFamily: typography.family,
+              color: colors.mutedForeground,
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            No AI summary available yet.
+          </Text>
+        )}
+      </View>
+
+      {performance.incorrectDetails.length > 0 ? (
+        <View
+          style={{
+            borderRadius: radii.xl,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            padding: spacing.lg,
+            marginBottom: spacing.xl,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: typography.family,
+              fontWeight: typography.weightMedium,
+              color: colors.foreground,
+              fontSize: 16,
+              marginBottom: spacing.sm,
+            }}
+          >
+            Quick review
+          </Text>
+          {performance.incorrectDetails.slice(0, 3).map(({ index, question, selectedLetter, correctLetter }) => (
+            <Text
+              key={`mistake-${index}`}
+              style={{
+                fontFamily: typography.family,
+                color: colors.mutedForeground,
+                fontSize: 14,
+                marginBottom: spacing.xs,
+                lineHeight: 20,
+              }}
+            >
+              Question {index + 1}: you picked {selectedLetter ?? 'no answer'} for "{question.question}", but the correct choice is {correctLetter}.
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       <View style={{ marginBottom: spacing.xl }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>

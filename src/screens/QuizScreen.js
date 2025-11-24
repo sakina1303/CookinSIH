@@ -3,17 +3,24 @@ import { ScrollView, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Header } from '../components/navigation/Header';
 import { QuizHome } from '../components/quiz/QuizHome';
-import { QuizPlay } from '../components/quiz/QuizPlay';
+import { QuizPlay, QUIZ_QUESTIONS } from '../components/quiz/QuizPlay';
 import { QuizResults } from '../components/quiz/QuizResults';
+import { generateQuizSummary } from '../services/ai';
 
-const TOTAL_QUESTIONS = 10;
+const TOTAL_QUESTIONS = QUIZ_QUESTIONS.length;
 
 export function QuizScreen() {
   const { colors, spacing } = useTheme();
   const [state, setState] = React.useState('home');
   const [session, setSession] = React.useState(null);
+  const [aiSummary, setAiSummary] = React.useState(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = React.useState(false);
+  const [summaryError, setSummaryError] = React.useState(null);
 
   const handleStartQuiz = (subject) => {
+    setAiSummary(null);
+    setSummaryError(null);
+    setIsGeneratingSummary(false);
     const answers = Array(TOTAL_QUESTIONS).fill(null);
     setSession({
       subjectId: subject.id,
@@ -21,6 +28,7 @@ export function QuizScreen() {
       totalQuestions: TOTAL_QUESTIONS,
       currentQuestion: 0,
       answers,
+      questions: QUIZ_QUESTIONS,
     });
     setState('playing');
   };
@@ -54,7 +62,47 @@ export function QuizScreen() {
   const handleHome = () => {
     setState('home');
     setSession(null);
+    setAiSummary(null);
+    setSummaryError(null);
+    setIsGeneratingSummary(false);
   };
+
+  React.useEffect(() => {
+    if (state !== 'results' || !session) {
+      return;
+    }
+
+    if (aiSummary || isGeneratingSummary) {
+      return;
+    }
+
+    let isMounted = true;
+    const fetchSummary = async () => {
+      try {
+        setIsGeneratingSummary(true);
+        setSummaryError(null);
+        const summary = await generateQuizSummary(session);
+        if (isMounted) {
+          setAiSummary(summary);
+        }
+      } catch (error) {
+        console.error('AI summary error:', error);
+        if (isMounted) {
+          setSummaryError('Unable to fetch the AI explanation right now. Please try again later.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsGeneratingSummary(false);
+        }
+      }
+    };
+
+    fetchSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [aiSummary, isGeneratingSummary, session, state]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -68,7 +116,14 @@ export function QuizScreen() {
           <QuizPlay session={session} onAnswerSelect={handleAnswerSelect} onNext={handleNext} />
         ) : null}
         {state === 'results' && session ? (
-          <QuizResults session={session} onRetake={handleRetake} onHome={handleHome} />
+          <QuizResults
+            session={session}
+            aiSummary={aiSummary}
+            isGeneratingSummary={isGeneratingSummary}
+            summaryError={summaryError}
+            onRetake={handleRetake}
+            onHome={handleHome}
+          />
         ) : null}
       </ScrollView>
     </View>

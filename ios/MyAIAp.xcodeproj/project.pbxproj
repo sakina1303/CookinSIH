@@ -12,6 +12,7 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		C58ECA4FC3ECD473B4632834 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		D1E993F72C6E4A6E00F4CC3F /* qwen2.5-1.5b-q4_k_m.gguf in Resources */ = {isa = PBXBuildFile; fileRef = D1E993F62C6E4A6E00F4CC3F /* qwen2.5-1.5b-q4_k_m.gguf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-MyAIAp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MyAIAp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MyAIAp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = MyAIAp/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D1E993F62C6E4A6E00F4CC3F /* qwen2.5-1.5b-q4_k_m.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "qwen2.5-1.5b-q4_k_m.gguf"; path = "../qwen2.5-1.5b-q4_k_m.gguf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -47,6 +49,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				D1E993F62C6E4A6E00F4CC3F /* qwen2.5-1.5b-q4_k_m.gguf */,
 			);
 			name = MyAIAp;
 			sourceTree = "<group>";
@@ -161,6 +164,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				C58ECA4FC3ECD473B4632834 /* PrivacyInfo.xcprivacy in Resources */,
+				D1E993F72C6E4A6E00F4CC3F /* qwen2.5-1.5b-q4_k_m.gguf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -65,7 +65,7 @@ export function BottomTabBar({ state, descriptors, navigation }) {
                   backgroundColor: isFocused ? applyAlpha(colors.primary, 0.12) : 'transparent',
                   borderRadius: radii.md,
                 },
-                pressed ? styles.pressed : null,
+                pressed ? styles.pressed : undefined,
               ]}
             >
               <View style={styles.iconContainer}>{icon}</View>
