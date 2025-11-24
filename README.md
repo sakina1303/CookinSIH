@@ -10,6 +10,11 @@ MyAIApp is the React Native mobile client for the education experience mirrored 
 
 ## Getting Started
 
+cd ios
+npm i pod
+npm i
+npx react-native run-ios
+
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
 ### Step 1: Start Metro
