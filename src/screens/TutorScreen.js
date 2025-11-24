@@ -5,6 +5,7 @@ import { Header } from '../components/navigation/Header';
 import { ChatMessages } from '../components/tutor/ChatMessages';
 import { TutorQuickActions } from '../components/tutor/QuickActions';
 import { ChatInput } from '../components/tutor/ChatInput';
+import { generateTutorResponse, preloadTutorModel } from '../services/ai';
 
 const INITIAL_MESSAGE = {
   id: '1',
@@ -18,55 +19,75 @@ export function TutorScreen() {
   const [messages, setMessages] = React.useState([INITIAL_MESSAGE]);
   const [inputValue, setInputValue] = React.useState('');
   const [isTyping, setIsTyping] = React.useState(false);
-  const typingTimeout = React.useRef(null);
+  const messagesRef = React.useRef(messages);
+  const isMountedRef = React.useRef(true);
 
   const pushMessage = React.useCallback((message) => {
     setMessages((prev) => [...prev, message]);
   }, []);
 
-  const simulateResponse = React.useCallback(() => {
-    typingTimeout.current = setTimeout(() => {
-      pushMessage({
-        id: `${Date.now()}-assistant`,
-        role: 'assistant',
-        content:
-          "That's a great question! Let me explain this in detail...\n\n**Key Points:**\n• First important concept\n• Second important concept\n• Third important concept\n\nWould you like me to dive deeper into any of these points?",
-        timestamp: Date.now(),
-      });
-      setIsTyping(false);
-    }, 1500);
-  }, [pushMessage]);
-
   const handleSend = React.useCallback(
-    (text) => {
+    async (text) => {
       const trimmed = text.trim();
       if (!trimmed || isTyping) {
         return;
       }
 
-      pushMessage({
-        id: `${Date.now()}-user`,
+      const timestamp = Date.now();
+      const userMessage = {
+        id: `${timestamp}-user`,
         role: 'user',
         content: trimmed,
-        timestamp: Date.now(),
-      });
+        timestamp,
+      };
+
+      const conversation = [...messagesRef.current, userMessage];
+
+      pushMessage(userMessage);
       setInputValue('');
       setIsTyping(true);
 
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current);
-      }
+      try {
+        const reply = await generateTutorResponse(conversation);
+        if (!isMountedRef.current) {
+          return;
+        }
 
-      simulateResponse();
+        pushMessage({
+          id: `${Date.now()}-assistant`,
+          role: 'assistant',
+          content: reply,
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        console.error('Tutor response failed', error);
+        if (isMountedRef.current) {
+          pushMessage({
+            id: `${Date.now()}-assistant-error`,
+            role: 'assistant',
+            content:
+              "I'm having trouble thinking right now, but let's try again in a moment. You can also ask the question in a different way!",
+            timestamp: Date.now(),
+          });
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsTyping(false);
+        }
+      }
     },
-    [isTyping, pushMessage, simulateResponse],
+    [isTyping, pushMessage],
   );
 
   React.useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  React.useEffect(() => {
+    preloadTutorModel();
+
     return () => {
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current);
-      }
+      isMountedRef.current = false;
     };
   }, []);
 

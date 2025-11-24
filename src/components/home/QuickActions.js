@@ -54,7 +54,6 @@ export function QuickActions({ onSelect }) {
                   borderRadius: radii.xl,
                   borderColor: applyAlpha(accentColor, 0.2),
                   borderWidth: 2,
-                  transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }],
                 },
               ]}
             >

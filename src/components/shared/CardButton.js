@@ -82,7 +82,7 @@ export function CardButton({
           paddingHorizontal: sizePreset.paddingHorizontal,
           paddingVertical: sizePreset.paddingVertical,
         },
-        pressed && !disabled ? styles.pressed : null,
+        pressed && !disabled ? styles.pressed : undefined,
         style,
       ]}
       {...rest}
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   pressed: {
-    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   spacing: {
     marginRight: 8,

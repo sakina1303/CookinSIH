@@ -4,7 +4,7 @@ import { useTheme } from '../../theme';
 import { CardButton } from '../shared/CardButton';
 import { applyAlpha } from '../shared/colorUtils';
 
-const QUESTIONS = [
+export const QUIZ_QUESTIONS = [
   {
     question: 'What is the capital of France?',
     options: ['London', 'Paris', 'Berlin', 'Madrid'],
@@ -59,9 +59,15 @@ const QUESTIONS = [
 
 export function QuizPlay({ session, onAnswerSelect, onNext }) {
   const { colors, radii, spacing, typography } = useTheme();
-  const currentQuestion = QUESTIONS[session.currentQuestion];
-  const progress = ((session.currentQuestion + 1) / session.totalQuestions) * 100;
+  const questions = session?.questions ?? QUIZ_QUESTIONS;
+  const totalQuestions = session?.totalQuestions ?? questions.length;
+  const currentQuestion = questions[session.currentQuestion];
+  const progress = ((session.currentQuestion + 1) / totalQuestions) * 100;
   const selected = session.answers[session.currentQuestion];
+
+  if (!currentQuestion) {
+    return null;
+  }
 
   return (
     <View>
@@ -75,7 +81,7 @@ export function QuizPlay({ session, onAnswerSelect, onNext }) {
               fontWeight: typography.weightMedium,
             }}
           >
-            Question {session.currentQuestion + 1} of {session.totalQuestions}
+            Question {session.currentQuestion + 1} of {totalQuestions}
           </Text>
           <Text
             style={{
@@ -217,7 +223,7 @@ export function QuizPlay({ session, onAnswerSelect, onNext }) {
         disabled={!selected}
         onPress={onNext}
       >
-        {session.currentQuestion === session.totalQuestions - 1 ? 'Finish' : 'Next'}
+        {session.currentQuestion === totalQuestions - 1 ? 'Finish' : 'Next'}
       </CardButton>
     </View>
   );

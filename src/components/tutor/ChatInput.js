@@ -55,9 +55,9 @@ export function ChatInput({ value, onChange, onSend, isLoading }) {
               styles.iconButton,
               {
                 borderRadius: radii.lg,
-                backgroundColor: pressed || isLoading ? colors.muted : colors.muted,
+                backgroundColor: colors.muted,
                 marginRight: spacing.sm,
-                opacity: isLoading ? 0.6 : 1,
+                opacity: isLoading ? 0.6 : pressed ? 0.85 : 1,
               },
             ]}
             disabled={isLoading}
@@ -71,8 +71,7 @@ export function ChatInput({ value, onChange, onSend, isLoading }) {
               {
                 backgroundColor: colors.primary,
                 borderRadius: radii.lg,
-                opacity: isLoading || value.trim().length === 0 ? 0.6 : 1,
-                transform: pressed && !isLoading ? [{ scale: 0.97 }] : undefined,
+                opacity: isLoading || value.trim().length === 0 ? 0.6 : pressed ? 0.85 : 1,
               },
             ]}
             disabled={isLoading || value.trim().length === 0}
