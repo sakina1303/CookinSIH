@@ -1,13 +1,12 @@
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, ActivityIndicator, Text } from 'react-native';
 import { useTheme } from '../theme';
 import { Header } from '../components/navigation/Header';
 import { QuizHome } from '../components/quiz/QuizHome';
-import { QuizPlay, QUIZ_QUESTIONS } from '../components/quiz/QuizPlay';
+import { QuizPlay } from '../components/quiz/QuizPlay';
 import { QuizResults } from '../components/quiz/QuizResults';
-import { generateQuizSummary } from '../services/ai';
-
-const TOTAL_QUESTIONS = QUIZ_QUESTIONS.length;
+import { generateQuizQuestions, generateQuizInsights } from '../services/ai';
+import { getRandomChunks } from '../services/database';
 
 export function QuizScreen() {
   const { colors, spacing } = useTheme();
@@ -16,21 +15,41 @@ export function QuizScreen() {
   const [aiSummary, setAiSummary] = React.useState(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = React.useState(false);
   const [summaryError, setSummaryError] = React.useState(null);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = React.useState(false);
+  const [contentChunks, setContentChunks] = React.useState([]);
 
-  const handleStartQuiz = (subject) => {
+  const handleStartQuiz = async (subject) => {
     setAiSummary(null);
     setSummaryError(null);
     setIsGeneratingSummary(false);
-    const answers = Array(TOTAL_QUESTIONS).fill(null);
-    setSession({
-      subjectId: subject.id,
-      subjectName: subject.name,
-      totalQuestions: TOTAL_QUESTIONS,
-      currentQuestion: 0,
-      answers,
-      questions: QUIZ_QUESTIONS,
-    });
-    setState('playing');
+    setIsGeneratingQuiz(true);
+    setState('loading');
+
+    try {
+      // Generate quiz questions from database content
+      const questions = await generateQuizQuestions(10);
+
+      // Get content chunks for later use in insights
+      const chunks = await getRandomChunks(3);
+      setContentChunks(chunks);
+
+      const answers = Array(questions.length).fill(null);
+      setSession({
+        subjectId: subject.id,
+        subjectName: subject.name,
+        totalQuestions: questions.length,
+        currentQuestion: 0,
+        answers,
+        questions,
+      });
+      setState('playing');
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      setState('home');
+      // You might want to show an error message to the user here
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
   };
 
   const handleAnswerSelect = (answerIndex) => {
@@ -81,7 +100,7 @@ export function QuizScreen() {
       try {
         setIsGeneratingSummary(true);
         setSummaryError(null);
-        const summary = await generateQuizSummary(session);
+        const summary = await generateQuizInsights(session, contentChunks);
         if (isMounted) {
           setAiSummary(summary);
         }
@@ -102,7 +121,7 @@ export function QuizScreen() {
     return () => {
       isMounted = false;
     };
-  }, [aiSummary, isGeneratingSummary, session, state]);
+  }, [aiSummary, isGeneratingSummary, session, state, contentChunks]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -111,7 +130,20 @@ export function QuizScreen() {
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.lg, paddingBottom: spacing.xxl }}
         showsVerticalScrollIndicator={false}
       >
-        {state === 'home' && <QuizHome onStartQuiz={handleStartQuiz} />}
+        {state === 'home' && <QuizHome onStartQuiz={handleStartQuiz} isGenerating={isGeneratingQuiz} />}
+        {state === 'loading' && (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.xxl }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={{
+              marginTop: spacing.lg,
+              color: colors.mutedForeground,
+              fontSize: 16,
+              fontFamily: 'System'
+            }}>
+              Generating quiz from textbook content...
+            </Text>
+          </View>
+        )}
         {state === 'playing' && session ? (
           <QuizPlay session={session} onAnswerSelect={handleAnswerSelect} onNext={handleNext} />
         ) : null}

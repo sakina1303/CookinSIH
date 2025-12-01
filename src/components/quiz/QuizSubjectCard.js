@@ -6,7 +6,7 @@ import { applyAlpha } from '../shared/colorUtils';
 import { CardButton } from '../shared/CardButton';
 import { GradientProgressBar } from '../shared/GradientProgressBar';
 
-export function QuizSubjectCard({ subject, onStart }) {
+export function QuizSubjectCard({ subject, onStart, disabled }) {
   const { colors, radii, spacing, typography } = useTheme();
   const accentKey = subject.accentKey ?? 'primary';
   const accent = colors[accentKey] ?? colors.primary;
@@ -65,7 +65,12 @@ export function QuizSubjectCard({ subject, onStart }) {
             </Text>
           </View>
         </View>
-        <CardButton variant="primary" size="sm" onPress={() => onStart?.(subject)}>
+        <CardButton
+          variant="primary"
+          size="sm"
+          onPress={() => onStart?.(subject)}
+          disabled={disabled}
+        >
           Start
         </CardButton>
       </View>

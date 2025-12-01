@@ -41,6 +41,8 @@ export function TutorScreen() {
         timestamp,
       };
 
+      console.log({userMessage})
+
       const conversation = [...messagesRef.current, userMessage];
 
       pushMessage(userMessage);
