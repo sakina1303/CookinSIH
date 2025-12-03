@@ -13,7 +13,7 @@ const SUBJECTS = [
   { id: 'science', name: 'Science', icon: '🔬', accentKey: 'accent', progress: 45 },
 ];
 
-export function QuizHome({ onStartQuiz }) {
+export function QuizHome({ onStartQuiz, isGenerating }) {
   const { spacing } = useTheme();
   const [search, setSearch] = React.useState('');
 
@@ -25,7 +25,12 @@ export function QuizHome({ onStartQuiz }) {
         <SubjectSearch value={search} onChangeText={setSearch} placeholder="Search subjects..." />
       </View>
       {filtered.map((subject) => (
-        <QuizSubjectCard key={subject.id} subject={subject} onStart={() => onStartQuiz?.(subject)} />
+        <QuizSubjectCard
+          key={subject.id}
+          subject={subject}
+          onStart={() => onStartQuiz?.(subject)}
+          disabled={isGenerating}
+        />
       ))}
     </View>
   );
